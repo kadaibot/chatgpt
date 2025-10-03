@@ -20,4 +20,5 @@ async def on_ready():
 async def hello(interaction: discord.Interaction):
     await interaction.response.send_message("こんにちは！私はPython製スラッシュコマンドBotです 🤖")
 
-
+# Botを起動
+bot.run("YOUR_BOT_TOKEN")
