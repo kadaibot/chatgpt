@@ -1,18 +1,29 @@
+const express = require('express');
 const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder } = require('discord.js');
 require('dotenv').config();
 
+// .env から読み込み
 const TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 const GUILD_ID = process.env.GUILD_ID;
 
+// ✅ Express で Render のためのポートを開く
+const app = express();
+const PORT = process.env.PORT || 3000;
+app.get('/', (req, res) => res.send('Bot is running!'));
+app.listen(PORT, () => {
+  console.log(`✅ Web server listening on port ${PORT}`);
+});
+
+// ✅ Discord Client 初期化
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-// スラッシュコマンドの登録
+// ✅ スラッシュコマンド定義
 const commands = [
   new SlashCommandBuilder()
     .setName('remind')
     .setDescription('指定時間後にリマインドします')
-    .addStringOption(option => 
+    .addStringOption(option =>
       option.setName('message')
         .setDescription('リマインドメッセージ')
         .setRequired(true))
@@ -23,27 +34,28 @@ const commands = [
         .setMinValue(1)),
 ].map(command => command.toJSON());
 
+// ✅ コマンド登録
 const rest = new REST({ version: '10' }).setToken(TOKEN);
 
 (async () => {
   try {
-    console.log('Started refreshing application (/) commands.');
-
+    console.log('🌀 Registering slash commands...');
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-      { body: commands },
+      { body: commands }
     );
-
-    console.log('Successfully reloaded application (/) commands.');
+    console.log('✅ Slash commands registered.');
   } catch (error) {
-    console.error(error);
+    console.error('❌ Failed to register commands:', error);
   }
 })();
 
-client.on('ready', () => {
-  console.log(`Logged in as ${client.user.tag}!`);
+// ✅ Botが準備完了時
+client.once('clientReady', () => {
+  console.log(`🤖 Logged in as ${client.user.tag}`);
 });
 
+// ✅ スラッシュコマンド実行時
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -60,13 +72,16 @@ client.on('interactionCreate', async interaction => {
           ephemeral: false,
         });
       } catch (error) {
-        console.error('Failed to send reminder:', error);
+        console.error('❌ Failed to send reminder:', error);
       }
     }, minutes * 60 * 1000);
   }
 });
-console.log("CLIENT_ID:", process.env.CLIENT_ID);
-console.log("TOKEN starts with:", process.env.DISCORD_TOKEN?.slice(0, 10)); // トークンは全部出さないように先頭10文字だけ表示
-console.log("GUILD_ID:", process.env.GUILD_ID);
 
+// ✅ 環境変数ログ（トークンは先頭だけ表示）
+console.log("CLIENT_ID:", CLIENT_ID);
+console.log("TOKEN starts with:", TOKEN?.slice(0, 10));
+console.log("GUILD_ID:", GUILD_ID);
+
+// ✅ Botログイン
 client.login(TOKEN);
